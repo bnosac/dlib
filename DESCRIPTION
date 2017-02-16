@@ -5,9 +5,8 @@ License: BSL-1.0
 Version: 1.0
 Date: 2017-02-01
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
-Author: c(person("Jan", "Wijffels", role = c("aut", "cre", "cph"), email =
-    "jwijffels@bnosac.be"), person("BNOSAC", role = "cph"))
-Description: 'Dlib' <http://dlib.net> is a 'C++' toolkit containing machine
+Author: Jan Wijffels, BNOSAC and Davis King
+Description: Interface for Rcpp users to dlib. 'Dlib' <http://dlib.net> is a 'C++' toolkit containing machine
     learning algorithms and computer vision tools. It is used in a wide range of
     domains including robotics, embedded devices, mobile phones, and large high
     performance computing environments. This package allows R users to use 'dlib'
@@ -15,4 +14,4 @@ Description: 'Dlib' <http://dlib.net> is a 'C++' toolkit containing machine
 LinkingTo: Rcpp
 Imports:
     Rcpp
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
