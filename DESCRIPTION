@@ -14,4 +14,4 @@ Description: Interface for 'Rcpp' users to 'dlib' <http://dlib.net> which is a
 LinkingTo: Rcpp
 Imports:
     Rcpp
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

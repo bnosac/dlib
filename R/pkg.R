@@ -5,5 +5,5 @@
 #' @aliases dlib-package
 #' @docType package
 #' @importFrom Rcpp evalCpp
-#' @useDynLib dlib, .registration=TRUE
+#' @useDynLib dlib
 NULL
