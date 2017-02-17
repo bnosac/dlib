@@ -6,12 +6,12 @@ Version: 1.0
 Date: 2017-02-01
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
 Author: Jan Wijffels, BNOSAC and Davis King
-Description: Interface for 'Rcpp' users to 'dlib' <http://dlib.net> which is a 'C++' toolkit containing machine
-    learning algorithms and computer vision tools. It is used in a wide range of
-    domains including robotics, embedded devices, mobile phones, and large high
-    performance computing environments. This package allows R users to use 'dlib'
-    through 'Rcpp'.
+Description: Interface for 'Rcpp' users to 'dlib' <http://dlib.net> which is a
+    'C++' toolkit containing machine learning algorithms and computer vision tools.
+    It is used in a wide range of domains including robotics, embedded devices,
+    mobile phones, and large high performance computing environments. This package
+    allows R users to use 'dlib' through 'Rcpp'.
 LinkingTo: Rcpp
 Imports:
     Rcpp
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1
