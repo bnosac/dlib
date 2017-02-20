@@ -33,6 +33,7 @@ The following shows how to include dlib inside an R package which uses Rcpp. Exa
 ```
 #include <Rcpp.h>
 using namespace Rcpp;
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(dlib)]]
 #include <dlib/algs.h>
 #include <dlib/image_processing/frontal_face_detector.h>
