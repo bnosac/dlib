@@ -24,7 +24,7 @@ library(dlib)
 ## Register a function called dlib_surf to read and extract the FHOG features 
 ## have a look at the file for how it is structured
 f <- system.file("extdata", "rcpp_surf.cpp", package = "dlib")
-cat(f, sep = "\\n")
+cat(readLines(f), sep = "\\n")
 sourceCpp(f)
 
 ## 
