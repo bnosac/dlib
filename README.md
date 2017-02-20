@@ -6,10 +6,24 @@ The version of dlib which is included is version 19.2
 
 ## Installation
 
+Install from CRAN
+```
+install.packages("dlib")
+```
+
 Install this development version from github.
 ```
 install.packages("devtools")
 devtools::install_github("bnosac/dlib")
+```
+
+## Example
+
+An example of the usage of the package is included regarding identifying SURF descriptors in an image.
+
+```
+## See an example of the usage 
+help("dlib-package")
 ```
 
 ## Include dlib inside an Rcpp package

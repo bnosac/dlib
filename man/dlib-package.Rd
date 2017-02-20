@@ -9,6 +9,7 @@
 It is used in a wide range of domains including robotics, embedded devices, mobile phones, and large high performance computing environments. This package allows R users to use 'dlib' through 'Rcpp'.
 }
 \examples{
+\dontrun{
 library(Rcpp)
 library(inline)
 library(dlib)
@@ -39,6 +40,7 @@ image_write(img, path = f_bmp, format = "BMP3")
 ## Step 3: 
 ## Apply the function Rcpp function dlib_surf on the image
 dlib_surf(f_bmp)
+}
 }
 \seealso{
 \code{\link{inlineCxxPlugin}}

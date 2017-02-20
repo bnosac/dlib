@@ -8,6 +8,7 @@
 #' @seealso \code{\link{inlineCxxPlugin}}
 #' @useDynLib dlib
 #' @examples 
+#' \dontrun{
 #' library(Rcpp)
 #' library(inline)
 #' library(dlib)
@@ -38,6 +39,7 @@
 #' ## Step 3: 
 #' ## Apply the function Rcpp function dlib_surf on the image
 #' dlib_surf(f_bmp)
+#' }
 NULL
 
 
