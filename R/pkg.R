@@ -14,8 +14,9 @@
 #' library(dlib)
 #' 
 #' ##
-#' ## Example adapted from http://dlib.net/fhog_ex.cpp.html
-#' ## Find the FHOG features of an image
+#' ## Example adapted from http://dlib.net/surf_ex.cpp.html
+#' ## Find the SURF (https://en.wikipedia.org/wiki/Speeded_up_robust_features) 
+#' ##   features of an image
 #' 
 #' ## 
 #' ## Step 1: 
@@ -27,7 +28,8 @@
 #' 
 #' ## 
 #' ## Step 2: 
-#' ## Convert image from jpeg to BMP3 format as ine dlib_surf, we assume the file is in BMP3 format 
+#' ## Convert image from jpeg to BMP3 format as ine dlib_surf function, 
+#' ##   we assume the file is in BMP3 format 
 #' library(magick)
 #' f <- system.file("extdata", "cruise_boat.jpeg", package = "dlib")
 #' img <- image_read(path = f)
