@@ -8,3 +8,38 @@
 'Dlib' <http://dlib.net> is a 'C++' toolkit containing machine learning algorithms and computer vision tools. 
 It is used in a wide range of domains including robotics, embedded devices, mobile phones, and large high performance computing environments. This package allows R users to use 'dlib' through 'Rcpp'.
 }
+\examples{
+library(Rcpp)
+library(inline)
+library(dlib)
+
+##
+## Example adapted from http://dlib.net/fhog_ex.cpp.html
+## Find the FHOG features of an image
+
+## 
+## Step 1: 
+## Register a function called dlib_surf to read and extract the FHOG features 
+## have a look at the file for how it is structured
+f <- system.file("extdata", "rcpp_surf.cpp", package = "dlib")
+cat(f, sep = "\\n")
+sourceCpp(f)
+
+## 
+## Step 2: 
+## Convert image from jpeg to BMP3 format as ine dlib_surf, we assume the file is in BMP3 format 
+library(magick)
+f <- system.file("extdata", "cruise_boat.jpeg", package = "dlib")
+img <- image_read(path = f)
+img 
+f_bmp <- tempfile(fileext = ".bmp")
+image_write(img, path = f_bmp, format = "BMP3")
+
+## 
+## Step 3: 
+## Apply the function Rcpp function dlib_surf on the image
+dlib_surf(f_bmp)
+}
+\seealso{
+\code{\link{inlineCxxPlugin}}
+}
