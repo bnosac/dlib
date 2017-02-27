@@ -39,7 +39,7 @@ using namespace Rcpp;
 #include <dlib/image_processing/frontal_face_detector.h>
 ```
 
-An example of this can be found at the **image.dlib** R package where it is used for image recognition. More information: https://github.com/bnosac/image.dlib.
+An example of this can be found at the **image.dlib** R package where it is used for image recognition. More information: https://github.com/bnosac/image/image.dlib.
 
 
 ## Support in machine learning, robotics or image recognition
