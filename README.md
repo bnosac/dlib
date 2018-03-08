@@ -2,20 +2,18 @@
 
 [Dlib](http://dlib.net) is a C++ toolkit containing machine learning algorithms and computer vision tools. It is used in a wide range of domains including robotics, embedded devices, mobile phones, and large high performance computing environments. This package allows R users to use dlib through the Rcpp package.
 
-The version of dlib which is included is version 19.2
+The version of dlib which is included is version 19.9.
+Some pragma statements in the dlib code are commented out for CRAN compliance.
 
 ## Installation
 
 Install from CRAN
+
 ```
 install.packages("dlib")
 ```
 
-Install this development version from github.
-```
-install.packages("devtools")
-devtools::install_github("bnosac/dlib")
-```
+Install this development version from github with `remotes::install_github("bnosac/dlib")`
 
 ## Example
 

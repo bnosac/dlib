@@ -19,7 +19,7 @@
 // GCC 4.8 gives false alarms about some variables being uninitialized.  Disable these
 // false warnings.
 #if ( defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 8)
-    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+    //#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
 
