@@ -3,7 +3,7 @@
 # information about it at http://www.cmake.org
 #
 
-cmake_minimum_required(VERSION 2.8.4)
+cmake_minimum_required(VERSION 2.8.12)
 
 # create a variable called target_name and set it to the string "dtest"
 set (target_name dtest)
@@ -12,7 +12,7 @@ PROJECT(${target_name})
 # compile the dlib/all/source.cpp file into its own object just to make sure it compiles
 set(DLIB_TEST_COMPILE_ALL_SOURCE_CPP ON)
 
-include(../cmake)
+add_subdirectory(.. dlib_build)
 
 # This variable contains a list of all the tests we are building
 # into the regression test suite.
@@ -49,6 +49,7 @@ set (tests
    directed_graph.cpp
    discriminant_pca.cpp
    disjoint_subsets.cpp
+   disjoint_subsets_sized.cpp
    ekm_and_lisf.cpp
    empirical_kernel_map.cpp
    entropy_coder.cpp
@@ -103,6 +104,7 @@ set (tests
    one_vs_one_trainer.cpp
    optimization.cpp
    optimization_test_functions.cpp
+   global_optimization.cpp
    opt_qp_solver.cpp
    parallel_for.cpp
    parse.cpp
@@ -125,7 +127,6 @@ set (tests
    set.cpp
    sldf.cpp
    sliding_buffer.cpp
-   smart_pointers.cpp
    sockets2.cpp
    sockets.cpp
    sockstreambuf.cpp
@@ -151,17 +152,11 @@ set (tests
    tuple.cpp
    type_safe_union.cpp
    vectorstream.cpp
+   dnn.cpp
+   cublas.cpp
+   find_optimal_parameters.cpp
+   elastic_net.cpp
    )
-
-# Tests that require C++11 support
-if (COMPILER_CAN_DO_CPP_11)
-   set(tests ${tests}
-      dnn.cpp
-      cublas.cpp
-      find_optimal_parameters.cpp
-      elastic_net.cpp
-      )
-endif()
 
 
 # add all the cpp files we want to compile to this list.  This tells
@@ -174,7 +169,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 
-TARGET_LINK_LIBRARIES(${target_name} dlib )
+TARGET_LINK_LIBRARIES(${target_name} dlib::dlib )
 
 
 if (NOT DLIB_NO_GUI_SUPPORT)
@@ -182,5 +177,3 @@ if (NOT DLIB_NO_GUI_SUPPORT)
    add_subdirectory(examples)
    add_subdirectory(tools)
 endif()
-
-

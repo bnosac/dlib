@@ -18,7 +18,14 @@
 #include <vector>
 #include "tensor_tools.h"
 #include <type_traits>
+#include "../metaprogramming.h"
 
+#ifdef _MSC_VER
+// Tell Visual Studio not to recursively inline functions very much because otherwise it
+// takes hours to compile the DNN code sometimes.  It's crazy.  Hopefully we can remove
+// this some day when the visual studio compiler is more efficient.
+#pragma inline_depth(2)
+#endif
 
 
 namespace dlib
@@ -60,6 +67,27 @@ namespace dlib
 
     namespace impl
     {
+        // The reason we return an int for this version rather than doing the more straight forward thing (like we do above) is to avoid a bug in visual studio 2015.
+        template <typename T>
+        auto call_clean_method_if_exists (
+            T& obj,
+            special_
+        ) -> typename int_<decltype(&T::clean)>::type { obj.clean();  return 0;  }
+
+        template <typename T>
+        void call_clean_method_if_exists (T& , general_) {}
+    }
+    template <typename T>
+    void call_clean_method_if_exists(T& obj) { impl::call_clean_method_if_exists(obj, special_()); }
+    /*!
+        ensures
+            - calls obj.clean() if obj has a .clean() method.
+    !*/
+
+// ----------------------------------------------------------------------------------------
+
+    namespace impl
+    {
         class repeat_input_layer 
         {
             /*!
@@ -81,7 +109,6 @@ namespace dlib
                 resizable_tensor& 
             ) const
             {
-                DLIB_CASSERT(false,"This function should never be called");
             }
 
             friend void serialize(const repeat_input_layer&, std::ostream&){}
@@ -123,33 +150,10 @@ namespace dlib
 
     namespace impl
     {
-        template <size_t... n>
-        struct ct_integers_list {
-            template <size_t m>
-            struct push_back
-            {
-                typedef ct_integers_list<n..., m> type;
-            };
-        };
-
-        template <size_t max>
-        struct ct_make_integer_range
-        {
-            // recursively call push_back on ct_integers_list to build a range from 1 to max
-            // inclusive.
-            typedef typename ct_make_integer_range<max-1>::type::template push_back<max>::type type;
-        };
-
-        template <>
-        struct ct_make_integer_range<0>
-        {
-            typedef ct_integers_list<> type;
-        };
-
         template <size_t... indices, typename Tuple>
         auto tuple_subset(
             const Tuple& item, 
-            ct_integers_list<indices...>
+            compile_time_integer_list<indices...>
         ) -> decltype(std::make_tuple(std::get<indices>(item)...))
         {
             return std::make_tuple(std::get<indices>(item)...);
@@ -160,7 +164,7 @@ namespace dlib
             const std::tuple<Head, Tail...>& item
         )
         {
-            return tuple_subset(item, typename ct_make_integer_range<sizeof...(Tail)>::type());
+            return tuple_subset(item, typename make_compile_time_integer_range<sizeof...(Tail)>::type());
         }
 
         template <typename T>
@@ -172,15 +176,15 @@ namespace dlib
         template <typename... T>
         auto tuple_flatten(
             const std::tuple<T...>& item
-        ) -> decltype(tuple_flatten(item, typename ct_make_integer_range<sizeof...(T)>::type()))
+        ) -> decltype(tuple_flatten(item, typename make_compile_time_integer_range<sizeof...(T)>::type()))
         {
-            return tuple_flatten(item, typename ct_make_integer_range<sizeof...(T)>::type());
+            return tuple_flatten(item, typename make_compile_time_integer_range<sizeof...(T)>::type());
         }
 
         template <size_t... indices, typename... T>
         auto tuple_flatten(
             const std::tuple<T...>& item, 
-            ct_integers_list<indices...>
+            compile_time_integer_list<indices...>
         ) -> decltype(std::tuple_cat(tuple_flatten(std::get<indices-1>(item))...))
         {
             return std::tuple_cat(tuple_flatten(std::get<indices-1>(item))...);
@@ -577,6 +581,10 @@ namespace dlib
     template <typename LAYER_DETAILS, typename SUBNET, typename enabled = void>
     class add_layer;
 
+    template <typename LAYER_DETAILS, typename SUBNET, typename enabled>
+    void serialize(const add_layer<LAYER_DETAILS,SUBNET,enabled>& item, std::ostream& out);
+    template <typename LAYER_DETAILS, typename SUBNET, typename enabled>
+    void deserialize(add_layer<LAYER_DETAILS,SUBNET,enabled>& item, std::istream& in);
 
     template <typename T, typename U>
     struct is_nonloss_layer_type<add_layer<T,U>> : std::true_type {};
@@ -894,6 +902,7 @@ namespace dlib
             temp_tensor.clear();
             gradient_input_is_stale = true;
             subnetwork->clean();
+            call_clean_method_if_exists(details);
         }
 
         friend void serialize(const add_layer& item, std::ostream& out)
@@ -1256,6 +1265,7 @@ namespace dlib
             params_grad.clear();
             temp_tensor.clear();
             gradient_input_is_stale = true;
+            call_clean_method_if_exists(details);
         }
 
         friend void serialize(const add_layer& item, std::ostream& out)
@@ -1681,6 +1691,11 @@ namespace dlib
         ) const
         {
             subnetwork.to_tensor(ibegin,iend,data);
+            // call to_tensor on the networks in details just to populate the
+            // _sample_expansion_factor values in those networks.  Other than that this
+            // call is a noop.  
+            for (auto& d : details)
+                d.to_tensor(ibegin, iend, data);
         }
 
         template <typename forward_iterator>
@@ -2116,12 +2131,12 @@ namespace dlib
     {
     private:
         // We don't want anyone making these no_label_type objects.  They are here only to
-        // allow add_loss_layer::label_type and dnn_trainer::label_type to exist which avoids
-        // needing to overload add_loss_layer and dnn_trainer for supervised an unsupervised
-        // losses.  It also can be a type to use in template metaprogramming to indicate
-        // "no label".  So here we make the constructor private with the exception that
-        // add_loss_layer objects can make it (again, just to simplify add_loss_layer's
-        // implementation).
+        // allow add_loss_layer::training_label_type and dnn_trainer::training_label_type
+        // to exist which avoids needing to overload add_loss_layer and dnn_trainer for
+        // supervised an unsupervised losses.  It also can be a type to use in template
+        // metaprogramming to indicate "no label".  So here we make the constructor private
+        // with the exception that add_loss_layer objects can make it (again, just to
+        // simplify add_loss_layer's implementation).
         no_label_type(){};
         template <typename LOSS_DETAILS, typename SUBNET> friend class add_loss_layer;
         template < typename net_type, typename solver_type > friend class dnn_trainer; 
@@ -2133,14 +2148,25 @@ namespace dlib
     class add_loss_layer
     {
         template <typename T, typename enabled=void>
-        struct get_loss_layer_label_type
+        struct get_loss_layer_training_label_type
         {
             typedef no_label_type type;
         };
         template <typename T>
-        struct get_loss_layer_label_type<T,typename std::enable_if<sizeof(typename T::label_type)!=0>::type>
+        struct get_loss_layer_training_label_type<T,typename std::enable_if<sizeof(typename T::training_label_type)!=0>::type>
         {
-            typedef typename T::label_type type;
+            typedef typename T::training_label_type type;
+        };
+
+        template <typename T, typename enabled=void>
+        struct get_loss_layer_output_label_type
+        {
+            typedef no_label_type type;
+        };
+        template <typename T>
+        struct get_loss_layer_output_label_type<T,typename std::enable_if<sizeof(typename T::output_label_type)!=0>::type>
+        {
+            typedef typename T::output_label_type type;
         };
 
     public:
@@ -2150,7 +2176,8 @@ namespace dlib
         const static size_t num_layers = subnet_type::num_layers + 1;
         // Note that the loss layer doesn't count as an additional computational layer.
         const static size_t num_computational_layers = subnet_type::num_computational_layers;
-        typedef typename get_loss_layer_label_type<LOSS_DETAILS>::type label_type;
+        typedef typename get_loss_layer_training_label_type<LOSS_DETAILS>::type training_label_type;
+        typedef typename get_loss_layer_output_label_type<LOSS_DETAILS>::type output_label_type;
 
         static_assert(is_nonloss_layer_type<SUBNET>::value, 
             "SUBNET must be of type add_layer, add_skip_layer, or add_tag_layer."); 
@@ -2246,19 +2273,51 @@ namespace dlib
             (*this)(temp_tensor, obegin);
         }
 
-        const label_type& operator() (const input_type& x)
+        const output_label_type& operator() (const input_type& x)
         {
             (*this)(&x, &x+1, &temp_label);
             return temp_label;
         }
 
+        template <typename ...T>
+        const output_label_type& process (const input_type& x, T&& ...args)
+        {
+            to_tensor(&x,&x+1,temp_tensor);
+            subnetwork.forward(temp_tensor);
+            const dimpl::subnet_wrapper<subnet_type> wsub(subnetwork);
+            loss.to_label(temp_tensor, wsub, &temp_label, std::forward<T>(args)...);
+            return temp_label;
+        }
+
+        template <typename iterable_type, typename ...T>
+        std::vector<output_label_type> process_batch (const iterable_type& data, size_t batch_size, T&& ...args)
+        {
+            std::vector<output_label_type> results(std::distance(data.begin(), data.end()));
+            auto o = results.begin();
+            auto i = data.begin();
+            auto num_remaining = results.size();
+            while(num_remaining != 0)
+            {
+                auto inc = std::min(batch_size, num_remaining);
+                to_tensor(i,i+inc,temp_tensor);
+                subnetwork.forward(temp_tensor);
+                const dimpl::subnet_wrapper<subnet_type> wsub(subnetwork);
+                loss.to_label(temp_tensor, wsub, o, std::forward<T>(args)...);
+
+                i += inc;
+                o += inc;
+                num_remaining -= inc;
+            }
+            return results;
+        }
+
         template <typename iterable_type>
-        std::vector<label_type> operator() (
+        std::vector<output_label_type> operator() (
             const iterable_type& data,
             size_t batch_size = 128
         )
         {
-            std::vector<label_type> results(std::distance(data.begin(), data.end()));
+            std::vector<output_label_type> results(std::distance(data.begin(), data.end()));
             auto o = results.begin();
             auto i = data.begin();
             auto num_remaining = results.size();
@@ -2377,23 +2436,10 @@ namespace dlib
             subnetwork.clean();
         }
 
-        friend void serialize(const add_loss_layer& item, std::ostream& out)
-        {
-            int version = 1;
-            serialize(version, out);
-            serialize(item.loss, out);
-            serialize(item.subnetwork, out);
-        }
-
-        friend void deserialize(add_loss_layer& item, std::istream& in)
-        {
-            int version = 0;
-            deserialize(version, in);
-            if (version != 1)
-                throw serialization_error("Unexpected version found while deserializing dlib::add_loss_layer.");
-            deserialize(item.loss, in);
-            deserialize(item.subnetwork, in);
-        }
+        template <typename T, typename U>
+        friend void serialize(const add_loss_layer<T,U>& item, std::ostream& out);
+        template <typename T, typename U>
+        friend void deserialize(add_loss_layer<T,U>& item, std::istream& in);
 
         friend std::ostream& operator<< (std::ostream& out, const add_loss_layer& item)
         {
@@ -2422,9 +2468,29 @@ namespace dlib
 
         // These two objects don't logically contribute to the state of this object.  They
         // are here to prevent them from being reallocated over and over.
-        label_type temp_label;
+        output_label_type temp_label;
         resizable_tensor temp_tensor;
     };
+
+    template <typename LOSS_DETAILS, typename SUBNET>
+    void serialize(const add_loss_layer<LOSS_DETAILS,SUBNET>& item, std::ostream& out)
+    {
+        int version = 1;
+        serialize(version, out);
+        serialize(item.loss, out);
+        serialize(item.subnetwork, out);
+    }
+
+    template <typename LOSS_DETAILS, typename SUBNET>
+    void deserialize(add_loss_layer<LOSS_DETAILS,SUBNET>& item, std::istream& in)
+    {
+        int version = 0;
+        deserialize(version, in);
+        if (version != 1)
+            throw serialization_error("Unexpected version found while deserializing dlib::add_loss_layer.");
+        deserialize(item.loss, in);
+        deserialize(item.subnetwork, in);
+    }
 
 
     template <typename T, typename U>
@@ -3160,7 +3226,7 @@ namespace dlib
                 }
             }
 
-        } // end for (int iter = 0; iter < 5; ++iter)
+        } // end for (int iter = 0; iter < 10; ++iter)
 
         if (rs_params.mean() > 0.003)
         {
@@ -3380,7 +3446,7 @@ namespace dlib
                 visitor&& v
             )
             {
-                vl_loop<i+1, num>::visit(net,v);
+                vl_loop_backwards<i+1, num>::visit(net,v);
                 v(i, layer<i>(net));
             }
         };
@@ -3457,6 +3523,71 @@ namespace dlib
         static_assert(begin <= end, "Invalid range");
         static_assert(end <= net_type::num_layers, "Invalid range");
         impl::vl_loop_backwards<begin,end>::visit(net, v);
+    }
+
+// ----------------------------------------------------------------------------------------
+
+    namespace impl
+    {
+        template <size_t i, unsigned long tag_id>
+        struct vl_until_tag
+        {
+            template <
+                typename net_type,
+                typename next_net_type,
+                typename visitor
+                >
+            static void visit(
+                net_type& net,
+                next_net_type& next_net,
+                visitor&& v
+            )
+            {
+                v(next_net);
+                vl_until_tag<i+1,tag_id>::visit(net,layer<i+1>(net),v);
+            }
+
+            template <
+                typename net_type,
+                typename SUBNET,
+                typename visitor
+                >
+            static void visit(
+                net_type& net,
+                const add_tag_layer<tag_id,SUBNET>& next_net,
+                visitor&& v
+            )
+            {
+                v(next_net);
+            }
+
+            template <
+                typename net_type,
+                typename SUBNET,
+                typename visitor
+                >
+            static void visit(
+                net_type& net,
+                add_tag_layer<tag_id,SUBNET>& next_net,
+                visitor&& v
+            )
+            {
+                v(next_net);
+            }
+        };
+    }
+
+    template <
+        unsigned long tag_id,
+        typename net_type,
+        typename visitor
+        >
+    void visit_layers_until_tag(
+        net_type& net,
+        visitor v
+    )
+    {
+        impl::vl_until_tag<0,tag_id>::visit(net, net, v);
     }
 
 // ----------------------------------------------------------------------------------------

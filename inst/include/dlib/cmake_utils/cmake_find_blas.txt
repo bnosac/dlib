@@ -8,19 +8,30 @@
 # attempts to find some other BLAS and LAPACK libraries if you don't have 
 # the Intel MKL.
 #
-#  blas_found        - True if BLAS is available
-#  lapack_found      - True if LAPACK is available
-#  blas_libraries    - link against these to use BLAS library 
-#  lapack_libraries  - link against these to use LAPACK library 
+#  blas_found               - True if BLAS is available
+#  lapack_found             - True if LAPACK is available
+#  found_intel_mkl          - True if the Intel MKL library is available
+#  found_intel_mkl_headers  - True if Intel MKL headers are available
+#  blas_libraries           - link against these to use BLAS library 
+#  lapack_libraries         - link against these to use LAPACK library 
+#  mkl_libraries            - link against these to use the MKL library
+#  mkl_include_dir          - add to the include path to use the MKL library
+#  openmp_libraries         - Set to Intel's OpenMP library if and only if we
+#                             find the MKL.
 
 # setting this makes CMake allow normal looking if else statements
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 
 SET(blas_found 0)
 SET(lapack_found 0)
+SET(found_intel_mkl 0)
+SET(found_intel_mkl_headers 0)
+SET(lapack_with_underscore 0)
+SET(lapack_without_underscore 0)
 
+message(STATUS "Searching for BLAS and LAPACK")
 
-if (UNIX)
+if (UNIX OR MINGW)
     message(STATUS "Searching for BLAS and LAPACK")
 
     if (BUILDING_MATLAB_MEX_FILE)
@@ -79,13 +90,22 @@ if (UNIX)
 
    include(CheckLibraryExists)
 
+    # Get mkl_include_dir
+    set(mkl_include_search_path
+        /opt/intel/mkl/include
+        /opt/intel/include
+    )
+    find_path(mkl_include_dir mkl_version.h ${mkl_include_search_path})
+    mark_as_advanced(mkl_include_dir)
 
     # Search for the needed libraries from the MKL.  We will try to link against the mkl_rt
     # file first since this way avoids linking bugs in some cases.
     find_library(mkl_rt mkl_rt ${mkl_search_path})
-    mark_as_advanced(  mkl_rt )
+    find_library(openmp_libraries iomp5 ${mkl_search_path}) 
+    mark_as_advanced(  mkl_rt  openmp_libraries )
     # if we found the MKL 
     if ( mkl_rt)
+        set(mkl_libraries  ${mkl_rt} )
         set(blas_libraries  ${mkl_rt} )
         set(lapack_libraries  ${mkl_rt} )
         set(blas_found 1)
@@ -93,7 +113,6 @@ if (UNIX)
         set(found_intel_mkl 1)
         message(STATUS "Found Intel MKL BLAS/LAPACK library")
     endif()
-
 
     if (NOT found_intel_mkl)
         # Search for the needed libraries from the MKL.  This time try looking for a different
@@ -106,6 +125,7 @@ if (UNIX)
         mark_as_advanced( mkl_intel mkl_core mkl_thread mkl_iomp mkl_pthread)
         # If we found the MKL 
         if (mkl_intel AND mkl_core AND mkl_thread AND mkl_iomp AND mkl_pthread)
+            set(mkl_libraries ${mkl_intel} ${mkl_core} ${mkl_thread} ${mkl_iomp} ${mkl_pthread})
             set(blas_libraries ${mkl_intel} ${mkl_core} ${mkl_thread} ${mkl_iomp} ${mkl_pthread})
             set(lapack_libraries ${mkl_intel} ${mkl_core} ${mkl_thread} ${mkl_iomp} ${mkl_pthread})
             set(blas_found 1)
@@ -115,6 +135,9 @@ if (UNIX)
         endif()
     endif()
 
+    if (found_intel_mkl AND mkl_include_dir)
+        set(found_intel_mkl_headers 1)
+    endif()
 
    # try to find some other LAPACK libraries if we didn't find the MKL
    set(extra_paths
@@ -231,18 +254,6 @@ if (UNIX)
    endif()
 
 
-   if (NOT blas_found)
-      message(" *****************************************************************************")
-      message(" *** No BLAS library found so using dlib's built in BLAS.  However, if you ***")
-      message(" *** install an optimized BLAS such as OpenBLAS or the Intel MKL your code ***")
-      message(" *** will run faster.  On Ubuntu you can install OpenBLAS by executing:    ***")
-      message(" ***    sudo apt-get install libopenblas-dev liblapack-dev                 ***")
-      message(" *** Or you can easily install OpenBLAS from source by downloading the     ***")
-      message(" *** source tar file from http://www.openblas.net, extracting it, and      ***")
-      message(" *** running:                                                              ***")
-      message(" ***    make; sudo make install                                            ***")
-      message(" *****************************************************************************")
-   endif()
 
 elseif(WIN32 AND NOT MINGW)
     message(STATUS "Searching for BLAS and LAPACK")
@@ -302,19 +313,61 @@ elseif(WIN32 AND NOT MINGW)
             set(lapack_found 0)
         endif()
 
-        if (MSVC AND blas_found)
-            # need to set /bigobj when statically linking with the MKL on
-            # visual studio or it doesn't work right.
-            if (NOT CMAKE_CXX_FLAGS MATCHES "/bigobj")
-                set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj" 
-                    CACHE STRING "Flags used by the compiler during all C++ builds." 
-                    FORCE)
-            endif ()
-        endif()
     endif()
 
 
 endif()
 
 
+# When all else fails use CMake's built in functions to find BLAS and LAPACK
+if (NOT blas_found)
+    find_package(BLAS QUIET)
+    if (${BLAS_FOUND})
+        set(blas_libraries ${BLAS_LIBRARIES})      
+        set(blas_found 1)
+    endif()
+endif()
+
+if (NOT lapack_found)
+    find_package(LAPACK QUIET)
+    if (${LAPACK_FOUND})
+        set(lapack_libraries ${LAPACK_LIBRARIES})
+        set(lapack_found 1)
+    endif()
+endif()
+
+# If using lapack, determine whether to mangle functions
+if (lapack_found)
+   include(CheckFunctionExists)
+   include(CheckFortranFunctionExists)
+   set(CMAKE_REQUIRED_LIBRARIES ${lapack_libraries})
+
+   check_function_exists("sgesv" LAPACK_FOUND_C_UNMANGLED)
+   check_function_exists("sgesv_" LAPACK_FOUND_C_MANGLED)
+   if (CMAKE_Fortran_COMPILER_LOADED)
+      check_fortran_function_exists("sgesv" LAPACK_FOUND_FORTRAN_UNMANGLED)
+      check_fortran_function_exists("sgesv_" LAPACK_FOUND_FORTRAN_MANGLED)
+   endif ()
+   if (LAPACK_FOUND_C_MANGLED OR LAPACK_FOUND_FORTRAN_MANGLED)
+      set(lapack_with_underscore 1)
+   elseif (LAPACK_FOUND_C_UNMANGLED OR LAPACK_FOUND_FORTRAN_UNMANGLED)
+      set(lapack_without_underscore 1)
+   endif ()
+endif()
+
+
+if (UNIX OR MINGW)
+   if (NOT blas_found)
+      message(" *****************************************************************************")
+      message(" *** No BLAS library found so using dlib's built in BLAS.  However, if you ***")
+      message(" *** install an optimized BLAS such as OpenBLAS or the Intel MKL your code ***")
+      message(" *** will run faster.  On Ubuntu you can install OpenBLAS by executing:    ***")
+      message(" ***    sudo apt-get install libopenblas-dev liblapack-dev                 ***")
+      message(" *** Or you can easily install OpenBLAS from source by downloading the     ***")
+      message(" *** source tar file from http://www.openblas.net, extracting it, and      ***")
+      message(" *** running:                                                              ***")
+      message(" ***    make; sudo make install                                            ***")
+      message(" *****************************************************************************")
+   endif()
+endif()
 

@@ -1,3 +1,4 @@
+
 // Copyright (C) 2006  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
 
@@ -23,7 +24,26 @@ namespace
     using namespace dlib;
     using namespace std;
 
+    dlib::rand rnd;
+
     logger dlog("test.matrix");
+
+    template <typename type>
+    const matrix<type> rand_sp_banded(long n, long bw)
+    {
+        matrix<type> m = 10 * identity_matrix<type>(n);
+        for (long row = 0; row < m.nr(); ++row)
+        {
+            for (long col = row; col < min(m.nc(), row + bw); ++col)
+            {
+                type r = rnd.get_random_double();
+                m(row,col) += r;
+                m(col,row) += r; 
+            }
+        }
+
+        return m;
+    }
 
     void matrix_test (
     )
@@ -731,6 +751,28 @@ namespace
         }
 
         {
+            // Test band chol
+            matrix<double> m = rand_sp_banded<double>(10, 3);
+
+            matrix<double> L = chol(m);
+            DLIB_TEST_MSG(equal(L*trans(L), m, 1e-10), L*trans(L)-m);   
+            DLIB_TEST_MSG(equal(inv(m), inv_upper_triangular(trans(L))*inv_lower_triangular((L))), "");
+            DLIB_TEST_MSG(equal(inv(m), trans(inv_lower_triangular(L))*inv_lower_triangular((L))), ""); 
+            DLIB_TEST_MSG(equal(inv(m), trans(inv_lower_triangular(L))*trans(inv_upper_triangular(trans(L)))), "");
+        }
+
+        {
+            // Test band chol in column major layout
+            matrix<double,10,10,default_memory_manager,column_major_layout> m(rand_sp_banded<double>(10, 3));
+
+            matrix<double> L = chol(m);
+            DLIB_TEST_MSG(equal(L*trans(L), m, 1e-10), L*trans(L)-m);   
+            DLIB_TEST_MSG(equal(inv(m), inv_upper_triangular(trans(L))*inv_lower_triangular((L))), "");
+            DLIB_TEST_MSG(equal(inv(m), trans(inv_lower_triangular(L))*inv_lower_triangular((L))), ""); 
+            DLIB_TEST_MSG(equal(inv(m), trans(inv_lower_triangular(L))*trans(inv_upper_triangular(trans(L)))), "");
+        }
+
+        {
             matrix<int> m(3,4), m2;
             m = 1,2,3,4,
                 4,5,6,6,
@@ -1064,6 +1106,28 @@ namespace
         }
 
         {
+            matrix<double> a = randm(3,4);
+            matrix<double> b = randm(3,4);
+
+            matrix<double> m1, m2;
+
+            m1 = max_pointwise(a,b);
+            m2 = min_pointwise(a,b);
+            DLIB_TEST(m1.nr() == a.nr());
+            DLIB_TEST(m1.nc() == a.nc());
+            DLIB_TEST(m2.nr() == a.nr());
+            DLIB_TEST(m2.nc() == a.nc());
+            for (long r = 0; r < a.nr(); ++r)
+            {
+                for (long c = 0; c < a.nc(); ++c)
+                {
+                    DLIB_TEST_MSG(m1(r,c) == std::max(a(r,c), b(r,c)), m1(r,c)  << " : " << a(r,c) << " " << b(r,c));
+                    DLIB_TEST(m2(r,c) == std::min(a(r,c), b(r,c)));
+                }
+            }
+        }
+
+        {
             matrix<double,4,5> m;
             set_subm(m, range(0,3), range(0,4)) = 4;
             DLIB_TEST(min(m) == max(m) && min(m) == 4);
@@ -1333,6 +1397,21 @@ namespace
             matrix<double> m1, m2, m3, truth;
             m1 = randm(n,n);
             m2 = randm(n,n);
+
+            rectangle rect1(1,1,3,3);
+            rectangle rect2(2,1,4,3);
+
+            truth = subm(m1,rect1)*subm(m2,rect2);
+            m3 = mat(&m1(0,0)+6, 3,3, m1.nc()) * mat(&m2(0,0)+7, 3,3, m2.nc());
+
+            DLIB_TEST(max(abs(truth-m3)) < 1e-13);
+        }
+
+        {
+            const long n = 5;
+            matrix<double> m1, m2, m3, truth;
+            m1 = randm(n,n);
+            m2 = randm(n,n);
             m3 = randm(n,n);
 
 
@@ -1372,6 +1451,45 @@ namespace
 
         }
 
+        {
+            matrix<double,3,3,default_memory_manager,column_major_layout> a(3,3);
+            matrix<double,3,3,default_memory_manager,column_major_layout> m = randm(3,3);
+            matrix<double,3,1,default_memory_manager,column_major_layout> b = randm(3,1);
+
+            a = 0;
+            set_colm(a,0) = m*b;
+            DLIB_TEST(colm(a,0) == m*b);
+            a = 0;
+            set_rowm(a,0) = trans(m*b);
+            DLIB_TEST(rowm(a,0) == trans(m*b));
+            DLIB_TEST(rowm(a,0) != m*b);
+        }
+        {
+            matrix<double,0,0,default_memory_manager,column_major_layout> a(3,3);
+            matrix<double,0,0,default_memory_manager,column_major_layout> m = randm(3,3);
+            matrix<double,0,0,default_memory_manager,column_major_layout> b = randm(3,1);
+
+            a = 0;
+            set_colm(a,0) = m*b;
+            DLIB_TEST(equal(colm(a,0) , m*b));
+            a = 0;
+            set_rowm(a,0) = trans(m*b);
+            DLIB_TEST(equal(rowm(a,0) , trans(m*b)));
+            DLIB_TEST(!equal(rowm(a,0) , m*b));
+        }
+        {
+            matrix<double> a(3,3);
+            matrix<double> m = randm(3,3);
+            matrix<double> b = randm(3,1);
+
+            a = 0;
+            set_colm(a,0) = m*b;
+            DLIB_TEST(equal(colm(a,0) , m*b));
+            a = 0;
+            set_rowm(a,0) = trans(m*b);
+            DLIB_TEST(equal(rowm(a,0) , trans(m*b)));
+            DLIB_TEST(!equal(rowm(a,0) , m*b));
+        }
     }
 
 

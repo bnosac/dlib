@@ -27,12 +27,8 @@ namespace
 
     dlib::rand rnd;
 
-    void matrix_test (
+    void matrix_test1 (
     )
-    /*!
-        ensures
-            - runs tests on the matrix stuff compliance with the specs
-    !*/
     {        
         typedef memory_manager_stateless<char>::kernel_2_2a MM;
         print_spinner();
@@ -379,23 +375,23 @@ namespace
             u = 2,2.2;
 
             out = 2, 2.2;
-            DLIB_TEST(equal(clamp(x, l, u) , out));
+            DLIB_TEST(equal(dlib::clamp(x, l, u) , out));
             out = 3, 2.2;
-            DLIB_TEST(!equal(clamp(x, l, u) , out));
+            DLIB_TEST(!equal(dlib::clamp(x, l, u) , out));
             out = 2, 4.2;
-            DLIB_TEST(!equal(clamp(x, l, u) , out));
+            DLIB_TEST(!equal(dlib::clamp(x, l, u) , out));
 
             x = 1.5, 1.5;
             out = x;
-            DLIB_TEST(equal(clamp(x, l, u) , out));
+            DLIB_TEST(equal(dlib::clamp(x, l, u) , out));
 
             x = 0.5, 1.5;
             out = 1, 1.5;
-            DLIB_TEST(equal(clamp(x, l, u) , out));
+            DLIB_TEST(equal(dlib::clamp(x, l, u) , out));
 
             x = 1.5, 0.5;
             out = 1.5, 1.0;
-            DLIB_TEST(equal(clamp(x, l, u) , out));
+            DLIB_TEST(equal(dlib::clamp(x, l, u) , out));
 
         }
 
@@ -739,6 +735,13 @@ namespace
         }
 
 
+    }
+
+
+    void matrix_test2 (
+    )
+    {        
+        typedef memory_manager_stateless<char>::kernel_2_2a MM;
         {
             srand(423452);
             const long M = 10;
@@ -1120,7 +1123,7 @@ namespace
                 m4 = randm(4,4,rnd);
 
                 DLIB_TEST(max(abs(m1*inv(m1) - identity_matrix(m1))) < 1e-13);
-                DLIB_TEST(max(abs(m2*inv(m2) - identity_matrix(m2))) < 1e-13);
+                DLIB_TEST(max(abs(m2*inv(m2) - identity_matrix(m2))) < 1e-12);
                 DLIB_TEST(max(abs(m3*inv(m3) - identity_matrix(m3))) < 1e-13);
                 DLIB_TEST_MSG(max(abs(m4*inv(m4) - identity_matrix(m4))) < 1e-12, max(abs(m4*inv(m4) - identity_matrix(m4))));
             }
@@ -1145,7 +1148,8 @@ namespace
         void perform_test (
         )
         {
-            matrix_test();
+            matrix_test1();
+            matrix_test2();
         }
     } a;
 
