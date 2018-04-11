@@ -6,6 +6,7 @@ The version of dlib which is included is version 19.10. This version is put into
 
 - Manually commented out some pragma statements in the dlib code for CRAN compliance  (namely -Wmaybe-uninitialized -Warray-bounds -Wmisleading-indentation as in `#pragma GCC diagnostic ignored "-Wmisleading-indentation"`)
 - Removed the dlib/test, dlib/java, dlib/external folder
+- Rcpp hacks to redirect cout, cerr, exit and abort to Rcpp variants 
 
 ## Include dlib inside an Rcpp package
 

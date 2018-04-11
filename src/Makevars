@@ -1,1 +1,9 @@
-PKG_CXXFLAGS=-I../inst/include
+CXX_STD      = CXX11
+PKG_CXXFLAGS = -I../inst/include -DDLIB_JPEG_SUPPORT -DDLIB_PNG_SUPPORT -DDLIB_NO_GUI_SUPPORT 
+PKG_LIBS     = -lpng -ljpeg -lz
+
+PKG_CPPFLAGS = $(SHLIB_PTHREAD_FLAGS) -include r_cmd_check_happiness.h
+
+#SOURCES = rcpp_surf.cpp ../inst/include/dlib/all/source.cpp dlib-example.cpp RcppExports.cpp
+#OBJECTS = $(SOURCES:.cpp=.o)
+#all: $(SHLIB)

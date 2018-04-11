@@ -12,8 +12,6 @@ Description: Interface for 'Rcpp' users to 'dlib' <http://dlib.net> which is a
     mobile phones, and large high performance computing environments. This package
     allows R users to use 'dlib' through 'Rcpp'.
 LinkingTo: Rcpp
-Imports:
-    Rcpp
 Suggests:
     magick
 RoxygenNote: 6.0.1
