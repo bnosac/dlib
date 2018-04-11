@@ -13,6 +13,7 @@
 #include "../rand.h"
 #include <memory>
 #include "../geometry/rectangle.h"
+#include "../test_for_odr_violations.h"
 
 namespace dlib
 {
@@ -48,6 +49,24 @@ namespace dlib { namespace tt
             - #out.num_samples() == lhs.num_samples()
             - #out.k() == #out.nr() == #out.nc() == 1
             - #out == sum_cols(pointwise_multiply(mat(lhs), mat(rhs))); 
+    !*/
+
+    void dot_prods (
+        bool add_to,
+        tensor& out,
+        const tensor& lhs,
+        const tensor& rhs
+    );
+    /*!
+        requires
+            - have_same_dimensions(lhs,rhs) == true
+            - out.size() == lhs.num_samples()
+            - out.k() == out.nr() == out.nc() == 1
+        ensures
+            - if (add_to) then
+                - #out == mat(out) + sum_cols(pointwise_multiply(mat(lhs), mat(rhs))); 
+            - else
+                - #out == sum_cols(pointwise_multiply(mat(lhs), mat(rhs))); 
     !*/
 
     void scale_columns (
@@ -271,6 +290,27 @@ namespace dlib { namespace tt
               Second, if dest.num_samples()==1, then after the pointwise multiplication of
               src1 with src2, the result has its samples summed to produce an output tensor
               with num_samples()==1 which is then assigned to #dest.
+            - if (add_to) then
+                - Instead of assigning the result to dest, this function adds the result to dest.
+    !*/
+
+    void scale_channels (
+        bool add_to,
+        tensor& dest,
+        const tensor& src,
+        const tensor& scales
+    );
+    /*!
+        requires
+            - have_same_dimensions(dest, src) == true
+            - scales.num_samples() == src.num_samples()
+            - scales.k()           == src.k()
+            - scales.nr()          == 1
+            - scales.nc()          == 1
+        ensures
+            - Scales each channel of src by the corresponding value in scales.  To be
+              precise, we will have:
+                - #dest(n,k,r,c) == src(n,k,r,c)*scales(n,k,1,1)
             - if (add_to) then
                 - Instead of assigning the result to dest, this function adds the result to dest.
     !*/

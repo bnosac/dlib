@@ -77,6 +77,8 @@ namespace dlib
             }
         }
 
+    // ------------------------------------------------------------------------------------
+
         void multiply_conv (
             bool add_to,
             tensor& dest,
@@ -150,6 +152,72 @@ namespace dlib
                 }
             }
         }
+
+    // ------------------------------------------------------------------------------------
+
+        void scale_channels (
+            bool add_to,
+            tensor& dest,
+            const tensor& src,
+            const tensor& scales
+        )
+        {
+            DLIB_CASSERT(have_same_dimensions(dest,src) && 
+                         scales.num_samples() == src.num_samples() &&
+                         scales.k()           == src.k() &&
+                         scales.nr()          == 1 &&
+                         scales.nc()          == 1 );
+
+            if (dest.size() == 0)
+                return;
+
+            if (add_to)
+            {
+                auto d = dest.host();
+                auto s = src.host();
+                auto scal = scales.host();
+
+                for (long n = 0; n < src.num_samples(); ++n)
+                {
+                    for (long k = 0; k < src.k(); ++k)
+                    {
+                        const auto scale = scal[n*scales.k() + k];
+                        for (long r = 0; r < src.nr(); ++r)
+                        {
+                            for (long c = 0; c < src.nc(); ++c)
+                            {
+                                *d++ += (*s++) * scale;
+                            }
+                        }
+                    }
+                }
+
+
+            }
+            else
+            {
+                auto d = dest.host_write_only();
+                auto s = src.host();
+                auto scal = scales.host();
+
+                for (long n = 0; n < src.num_samples(); ++n)
+                {
+                    for (long k = 0; k < src.k(); ++k)
+                    {
+                        const auto scale = scal[n*scales.k() + k];
+                        for (long r = 0; r < src.nr(); ++r)
+                        {
+                            for (long c = 0; c < src.nc(); ++c)
+                            {
+                                *d++ = (*s++) * scale;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    // ------------------------------------------------------------------------------------
 
         void add(
             float beta,
@@ -1571,21 +1639,21 @@ namespace dlib
             float* g = grad.host();
             const float x_scale = (grad.nc()-1)/(float)std::max<long>((gradient_input.nc()-1),1);
             const float y_scale = (grad.nr()-1)/(float)std::max<long>((gradient_input.nr()-1),1);
-            for (long samp = 0; samp < gradient_input.num_samples(); ++samp)
+            for (long long samp = 0; samp < gradient_input.num_samples(); ++samp)
             {
-                for (long k = 0; k < gradient_input.k(); ++k)
+                for (long long k = 0; k < gradient_input.k(); ++k)
                 {
-                    for (long r = 0; r < gradient_input.nr(); ++r)
+                    for (long long r = 0; r < gradient_input.nr(); ++r)
                     {
                         const float y = r*y_scale;
-                        const long top    = static_cast<long>(std::floor(y));
-                        const long bottom = std::min(top+1, grad.nr()-1);
+                        const long long top    = static_cast<long long>(std::floor(y));
+                        const long long bottom = std::min(top+1, grad.nr()-1);
                         const float tb_frac = y - top;
-                        for (long c = 0; c < gradient_input.nc(); ++c)
+                        for (long long c = 0; c < gradient_input.nc(); ++c)
                         {
                             const float x = c*x_scale;
-                            const long left   = static_cast<long>(std::floor(x));
-                            const long right  = std::min(left+1, grad.nc()-1);
+                            const long long left   = static_cast<long long>(std::floor(x));
+                            const long long right  = std::min(left+1, grad.nc()-1);
                             const float lr_frac = x - left;
 
                             const float tmp = gi[r*gradient_input_row_stride+c];

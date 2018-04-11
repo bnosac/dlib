@@ -2328,6 +2328,76 @@ namespace dlib
 
 // ----------------------------------------------------------------------------------------
 
+    template <
+        template<typename> class tag
+        >
+    class scale_
+    {
+        /*!
+            WHAT THIS OBJECT REPRESENTS
+                This is an implementation of the EXAMPLE_COMPUTATIONAL_LAYER_ interface
+                defined above.  This layer scales the output channels of the tagged layer
+                by multiplying it with the output of the previous layer.  To be specific:
+                    - Let INPUT  == layer<tag>(sub).get_output()
+                    - Let SCALES == sub.get_output()
+                    - This layer takes INPUT and SCALES as input.
+                    - The output of this layer has the same dimensions as INPUT.
+                    - This layer requires:
+                        - SCALES.num_samples() == INPUT.num_samples()
+                        - SCALES.k()  == INPUT.k()
+                        - SCALES.nr() == 1
+                        - SCALES.nc() == 1
+                    - The output tensor is produced by pointwise multiplying SCALES with
+                      INPUT at each spatial location.  Therefore, if OUT is the output of
+                      this layer then we would have:
+                        OUT(n,k,r,c) == INPUT(n,k,r,c)*SCALES(n,k)
+        !*/
+
+    public:
+        scale_(
+        ); 
+
+        template <typename SUBNET> void setup (const SUBNET& sub);
+        template <typename SUBNET> void forward(const SUBNET& sub, resizable_tensor& output);
+        template <typename SUBNET> void backward(const tensor& gradient_input, SUBNET& sub, tensor& params_grad);
+        const tensor& get_layer_params() const; 
+        tensor& get_layer_params(); 
+        /*!
+            These functions are implemented as described in the EXAMPLE_COMPUTATIONAL_LAYER_ interface.
+        !*/
+    };
+
+
+    template <
+        template<typename> class tag,
+        typename SUBNET
+        >
+    using scale = add_layer<scale_<tag>, SUBNET>;
+
+    // Here we add some convenient aliases for using scale_ with the tag layers. 
+    template <typename SUBNET> using scale1  = scale<tag1, SUBNET>;
+    template <typename SUBNET> using scale2  = scale<tag2, SUBNET>;
+    template <typename SUBNET> using scale3  = scale<tag3, SUBNET>;
+    template <typename SUBNET> using scale4  = scale<tag4, SUBNET>;
+    template <typename SUBNET> using scale5  = scale<tag5, SUBNET>;
+    template <typename SUBNET> using scale6  = scale<tag6, SUBNET>;
+    template <typename SUBNET> using scale7  = scale<tag7, SUBNET>;
+    template <typename SUBNET> using scale8  = scale<tag8, SUBNET>;
+    template <typename SUBNET> using scale9  = scale<tag9, SUBNET>;
+    template <typename SUBNET> using scale10 = scale<tag10, SUBNET>;
+    using scale1_  = scale_<tag1>;
+    using scale2_  = scale_<tag2>;
+    using scale3_  = scale_<tag3>;
+    using scale4_  = scale_<tag4>;
+    using scale5_  = scale_<tag5>;
+    using scale6_  = scale_<tag6>;
+    using scale7_  = scale_<tag7>;
+    using scale8_  = scale_<tag8>;
+    using scale9_  = scale_<tag9>;
+    using scale10_ = scale_<tag10>;
+
+// ----------------------------------------------------------------------------------------
+
     template<
         template<typename> class... TAG_TYPES
         >

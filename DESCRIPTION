@@ -3,7 +3,7 @@ Type: Package
 Title: Allow Access to the 'Dlib' C++ Library
 License: BSL-1.0
 Version: 1.1
-Date: 2018-03-08
+Date: 2018-04-10
 Maintainer: Jan Wijffels <jwijffels@bnosac.be>
 Author: Jan Wijffels, BNOSAC and Davis King
 Description: Interface for 'Rcpp' users to 'dlib' <http://dlib.net> which is a
@@ -15,6 +15,6 @@ LinkingTo: Rcpp
 Imports:
     Rcpp
 Suggests:
-    inline,
     magick
 RoxygenNote: 6.0.1
+SystemRequirements: libjpeg, libpng, zlib

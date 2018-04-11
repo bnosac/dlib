@@ -577,7 +577,7 @@ namespace dlib
         friend std::ostream& operator<<(std::ostream& out, const cont_& item)
         {
             out << "cont\t ("
-                << "num_filters="<<_num_filters
+                << "num_filters="<<item.num_filters_
                 << ", nr="<<_nr
                 << ", nc="<<_nc
                 << ", stride_y="<<_stride_y
@@ -595,7 +595,7 @@ namespace dlib
         friend void to_xml(const cont_& item, std::ostream& out)
         {
             out << "<cont"
-                << " num_filters='"<<_num_filters<<"'"
+                << " num_filters='"<<item.num_filters_<<"'"
                 << " nr='"<<_nr<<"'"
                 << " nc='"<<_nc<<"'"
                 << " stride_y='"<<_stride_y<<"'"
@@ -2271,6 +2271,127 @@ namespace dlib
     using mult_prev8_  = mult_prev_<tag8>;
     using mult_prev9_  = mult_prev_<tag9>;
     using mult_prev10_ = mult_prev_<tag10>;
+
+// ----------------------------------------------------------------------------------------
+
+    template <
+        template<typename> class tag
+        >
+    class scale_
+    {
+    public:
+        const static unsigned long id = tag_id<tag>::id;
+
+        scale_() 
+        {
+        }
+
+        template <typename SUBNET>
+        void setup (const SUBNET& /*sub*/)
+        {
+        }
+
+        template <typename SUBNET>
+        void forward(const SUBNET& sub, resizable_tensor& output)
+        {
+            auto&& scales = sub.get_output();
+            auto&& src = layer<tag>(sub).get_output();
+            DLIB_CASSERT(scales.num_samples() == src.num_samples() &&
+                         scales.k()           == src.k() &&
+                         scales.nr()          == 1 &&
+                         scales.nc()          == 1, 
+                         "scales.k(): " << scales.k() <<
+                         "\nsrc.k(): " << src.k() 
+                         );
+
+            output.copy_size(src);
+            tt::scale_channels(false, output, src, scales);
+        }
+
+        template <typename SUBNET>
+        void backward(const tensor& gradient_input, SUBNET& sub, tensor& /*params_grad*/)
+        {
+            auto&& scales = sub.get_output();
+            auto&& src = layer<tag>(sub).get_output();
+            // The gradient just flows backwards to the two layers that forward()
+            // read from.
+            tt::scale_channels(true, layer<tag>(sub).get_gradient_input(), gradient_input, scales);
+
+            if (reshape_src.num_samples() != src.num_samples())
+            {
+                reshape_scales = alias_tensor(src.num_samples()*src.k());
+                reshape_src = alias_tensor(src.num_samples()*src.k(),src.nr()*src.nc());
+            }
+
+            auto&& scales_grad = sub.get_gradient_input();
+            auto sgrad = reshape_scales(scales_grad);
+            tt::dot_prods(true, sgrad, reshape_src(src), reshape_src(gradient_input));
+        }
+
+        const tensor& get_layer_params() const { return params; }
+        tensor& get_layer_params() { return params; }
+
+        friend void serialize(const scale_& item, std::ostream& out)
+        {
+            serialize("scale_", out);
+            serialize(item.reshape_scales, out);
+            serialize(item.reshape_src, out);
+        }
+
+        friend void deserialize(scale_& item, std::istream& in)
+        {
+            std::string version;
+            deserialize(version, in);
+            if (version != "scale_")
+                throw serialization_error("Unexpected version '"+version+"' found while deserializing dlib::scale_.");
+            deserialize(item.reshape_scales, in);
+            deserialize(item.reshape_src, in);
+        }
+
+        friend std::ostream& operator<<(std::ostream& out, const scale_& item)
+        {
+            out << "scale"<<id;
+            return out;
+        }
+
+        friend void to_xml(const scale_& item, std::ostream& out)
+        {
+            out << "<scale tag='"<<id<<"'/>\n";
+        }
+
+    private:
+        alias_tensor reshape_scales;
+        alias_tensor reshape_src;
+        resizable_tensor params;
+    };
+
+    template <
+        template<typename> class tag,
+        typename SUBNET
+        >
+    using scale = add_layer<scale_<tag>, SUBNET>;
+
+    template <typename SUBNET> using scale1  = scale<tag1, SUBNET>;
+    template <typename SUBNET> using scale2  = scale<tag2, SUBNET>;
+    template <typename SUBNET> using scale3  = scale<tag3, SUBNET>;
+    template <typename SUBNET> using scale4  = scale<tag4, SUBNET>;
+    template <typename SUBNET> using scale5  = scale<tag5, SUBNET>;
+    template <typename SUBNET> using scale6  = scale<tag6, SUBNET>;
+    template <typename SUBNET> using scale7  = scale<tag7, SUBNET>;
+    template <typename SUBNET> using scale8  = scale<tag8, SUBNET>;
+    template <typename SUBNET> using scale9  = scale<tag9, SUBNET>;
+    template <typename SUBNET> using scale10 = scale<tag10, SUBNET>;
+
+    using scale1_  = scale_<tag1>;
+    using scale2_  = scale_<tag2>;
+    using scale3_  = scale_<tag3>;
+    using scale4_  = scale_<tag4>;
+    using scale5_  = scale_<tag5>;
+    using scale6_  = scale_<tag6>;
+    using scale7_  = scale_<tag7>;
+    using scale8_  = scale_<tag8>;
+    using scale9_  = scale_<tag9>;
+    using scale10_ = scale_<tag10>;
 
 // ----------------------------------------------------------------------------------------
 

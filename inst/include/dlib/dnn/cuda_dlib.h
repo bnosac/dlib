@@ -121,6 +121,13 @@ namespace dlib
             const tensor& rhs
         );
 
+        void dot_prods (
+            bool add_to,
+            tensor& out,
+            const tensor& lhs,
+            const tensor& rhs
+        );
+
         void scale_columns (
             tensor& out,
             const tensor& m,
@@ -190,6 +197,13 @@ namespace dlib
             tensor& dest,
             const tensor& src1,
             const tensor& src2
+        );
+
+        void scale_channels (
+            bool add_to,
+            tensor& dest,
+            const tensor& src,
+            const tensor& scales
         );
 
         void add (

@@ -20,7 +20,7 @@
 #include "jdhuff.h"		/* Declarations shared with jdphuff.c */
 
 #ifdef __GNUC__
-//#pragma GCC diagnostic ignored "-Wshift-negative-value"
+#pragma GCC diagnostic ignored "-Wshift-negative-value"
 #endif
 
 /*
