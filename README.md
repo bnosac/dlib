@@ -4,7 +4,7 @@
 
 The version of dlib which is included is version 19.10. This version is put into the inst/include folder with the following changes which are made for CRAN R CMD check compliance
 
-- UNDER CONSTRUCTION
+- Manually commented out some pragma statements in the dlib code for CRAN compliance  (namely -Wmaybe-uninitialized -Warray-bounds -Wmisleading-indentation as in `#pragma GCC diagnostic ignored "-Wmisleading-indentation"`)
 
 ## Include dlib inside an Rcpp package
 
